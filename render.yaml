@@ -1,0 +1,22 @@
+services:
+  - type: web
+    name: ctg-talents-api
+    runtime: node
+    repo: https://github.com/cayden0207/ctg-talents
+    branch: main
+    rootDir: server
+    buildCommand: npm install
+    startCommand: npm start
+    plan: starter
+    autoDeploy: true
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: SQLITE_PATH
+        value: /opt/render/project/data/database.sqlite
+      - key: JWT_SECRET
+        sync: false
+    disk:
+      name: data
+      mountPath: /opt/render/project/data
+      sizeGB: 1
