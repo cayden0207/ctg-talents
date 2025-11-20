@@ -3,6 +3,7 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import { AuthProvider, useAuth } from './context/AuthContext';
 import LoginPage from './pages/LoginPage';
 import HQDashboard from './pages/HQDashboard';
+import HQCharts from './pages/HQCharts';
 import { CssBaseline } from '@mui/material';
 
 import JVDashboard from './pages/JVDashboard';
@@ -24,10 +25,14 @@ function App() {
       <Router>
         <Routes>
           <Route path="/login" element={<LoginPage />} />
-          
-          <Route path="/hq/*" element={
+          <Route path="/hq" element={
             <ProtectedRoute allowedRoles={['HQ_ADMIN']}>
               <HQDashboard />
+            </ProtectedRoute>
+          } />
+          <Route path="/hq/dashboard" element={
+            <ProtectedRoute allowedRoles={['HQ_ADMIN']}>
+              <HQCharts />
             </ProtectedRoute>
           } />
           

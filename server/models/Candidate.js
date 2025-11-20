@@ -12,7 +12,19 @@ const Candidate = sequelize.define('Candidate', {
     type: DataTypes.STRING,
     allowNull: false
   },
+  email: {
+    type: DataTypes.STRING,
+    allowNull: true
+  },
+  phone: {
+    type: DataTypes.STRING,
+    allowNull: true
+  },
   resumeUrl: {
+    type: DataTypes.STRING,
+    allowNull: true
+  },
+  functionRole: {
     type: DataTypes.STRING,
     allowNull: true
   },
@@ -41,12 +53,36 @@ const Candidate = sequelize.define('Candidate', {
       key: 'id'
     }
   },
+  pendingJvId: {
+    type: DataTypes.UUID,
+    allowNull: true,
+    references: {
+      model: JV,
+      key: 'id'
+    }
+  },
+  statusNote: {
+    type: DataTypes.TEXT,
+    allowNull: true
+  },
   performanceRating: {
     type: DataTypes.INTEGER,
     allowNull: true
   },
   performanceNotes: {
     type: DataTypes.TEXT,
+    allowNull: true
+  },
+  expectedStartDate: {
+    type: DataTypes.DATEONLY,
+    allowNull: true
+  },
+  expectedSalary: {
+    type: DataTypes.INTEGER,
+    allowNull: true
+  },
+  lastStatusUpdate: {
+    type: DataTypes.DATE,
     allowNull: true
   }
 });
