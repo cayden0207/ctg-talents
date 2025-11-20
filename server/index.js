@@ -10,7 +10,7 @@ const PORT = process.env.PORT || 5001; // 5001 to avoid conflict with standard 5
 app.use(cors());
 app.use(express.json());
 
-const JWT_SECRET = 'super_secret_key_for_demo_only';
+const JWT_SECRET = process.env.JWT_SECRET || 'super_secret_key_for_demo_only';
 
 // Middleware to verify token
 const authenticateToken = (req, res, next) => {
