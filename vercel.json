@@ -1,9 +1,8 @@
 {
   "builds": [
-    { "src": "index.html", "use": "@vercel/static" }
+    { "src": "client/package.json", "use": "@vercel/static-build", "config": { "distDir": "dist" } }
   ],
-  "redirects": [],
-  "rewrites": [],
-  "headers": []
+  "rewrites": [
+    { "source": "/(.*)", "destination": "/" }
+  ]
 }
-
