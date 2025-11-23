@@ -26,6 +26,7 @@ import api from '../../services/api';
 import { ALL_STATUSES, statusLabel } from '../../constants/status';
 import { SKILL_OPTIONS } from '../../constants/skills';
 import CandidateDrawer from '../../components/CandidateDrawer';
+import { useToast } from '../../context/ToastContext';
 
 const SectionHeader = ({ title }) => (
   <Typography variant="subtitle2" color="primary" sx={{ mt: 2, mb: 1, textTransform: 'uppercase', letterSpacing: 1, fontWeight: 'bold' }}>
@@ -34,6 +35,7 @@ const SectionHeader = ({ title }) => (
 );
 
 export default function HQTalentPool() {
+  const { showToast } = useToast();
   const [candidates, setCandidates] = useState([]);
   const [loading, setLoading] = useState(false);
   const [filters, setFilters] = useState({ search: '', status: '' });
@@ -102,8 +104,9 @@ export default function HQTalentPool() {
 
       setModal({ open: false, type: 'add', data: null });
       fetchCandidates();
+      showToast(modal.type === 'add' ? 'Candidate created successfully' : 'Candidate updated successfully', 'success');
     } catch (err) {
-      alert('Error saving candidate');
+      showToast('Error saving candidate', 'error');
     }
   };
 

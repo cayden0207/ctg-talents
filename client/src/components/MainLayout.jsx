@@ -13,11 +13,10 @@ import {
   ListItemIcon, 
   ListItemText,
   Avatar,
-  Menu,
-  MenuItem,
   useTheme,
   useMediaQuery,
-  CssBaseline
+  CssBaseline,
+  Button
 } from '@mui/material';
 import {
   Menu as MenuIcon,
@@ -27,14 +26,15 @@ import {
   Inbox as InboxIcon,
   Group as TeamIcon,
   Logout as LogoutIcon,
-  Person as PersonIcon,
-  ChevronLeft as ChevronLeftIcon,
-  Settings as SettingsIcon
+  Settings as SettingsIcon,
+  Add as AddIcon
 } from '@mui/icons-material';
 import { useNavigate, useLocation, Outlet } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 
 const DRAWER_WIDTH = 260;
+const BRAND_COLOR = '#0f172a'; // Dark Slate
+const ACCENT_COLOR = '#3b82f6'; // Bright Blue
 
 const MENU_ITEMS = {
   HQ_ADMIN: [
@@ -58,14 +58,10 @@ const MainLayout = () => {
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
   
   const [mobileOpen, setMobileOpen] = useState(false);
-  const [anchorEl, setAnchorEl] = useState(null);
 
   const handleDrawerToggle = () => setMobileOpen(!mobileOpen);
-  const handleMenuOpen = (event) => setAnchorEl(event.currentTarget);
-  const handleMenuClose = () => setAnchorEl(null);
   
   const handleLogout = () => {
-    handleMenuClose();
     logout();
     navigate('/login');
   };
@@ -74,29 +70,35 @@ const MainLayout = () => {
   const currentTitle = menu.find(item => item.path === location.pathname)?.text || 'CTG Talents';
 
   const drawerContent = (
-    <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
-      <Toolbar sx={{ px: 2, display: 'flex', alignItems: 'center', gap: 1 }}>
+    <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column', bgcolor: BRAND_COLOR, color: 'white' }}>
+      <Toolbar sx={{ px: 3, display: 'flex', alignItems: 'center', gap: 1.5, minHeight: 70 }}>
          <Box 
            sx={{ 
-             width: 32, 
-             height: 32, 
-             bgcolor: 'primary.main', 
-             borderRadius: 1, 
+             width: 36, 
+             height: 36, 
+             borderRadius: 2, 
+             background: `linear-gradient(135deg, ${ACCENT_COLOR}, #60a5fa)`,
              display: 'flex', 
              alignItems: 'center', 
              justifyContent: 'center',
              color: 'white',
-             fontWeight: 'bold'
+             fontWeight: 'bold',
+             fontSize: 20,
+             boxShadow: '0 4px 12px rgba(59,130,246,0.5)'
             }}
           >
             C
           </Box>
-         <Typography variant="h6" color="text.primary" fontWeight="bold">
+         <Typography variant="h6" fontWeight="bold" sx={{ letterSpacing: 0.5 }}>
             CTG Talents
          </Typography>
       </Toolbar>
-      <Divider />
-      <List sx={{ flex: 1, px: 2, py: 2 }}>
+      
+      <Box sx={{ px: 2, mb: 2 }}>
+        <Divider sx={{ borderColor: 'rgba(255,255,255,0.1)' }} />
+      </Box>
+
+      <List sx={{ flex: 1, px: 2 }}>
         {menu.map((item) => {
           const isActive = location.pathname === item.path;
           return (
@@ -109,49 +111,55 @@ const MainLayout = () => {
                 selected={isActive}
                 sx={{
                   borderRadius: 2,
-                  bgcolor: isActive ? 'primary.soft' : 'transparent',
-                  color: isActive ? 'primary.main' : 'text.secondary',
+                  color: isActive ? 'white' : 'rgba(255,255,255,0.7)',
+                  bgcolor: isActive ? 'rgba(255,255,255,0.1)' : 'transparent',
+                  transition: 'all 0.2s',
+                  '&:hover': {
+                    bgcolor: 'rgba(255,255,255,0.05)',
+                    color: 'white'
+                  },
                   '&.Mui-selected': {
-                    bgcolor: 'primary.light',
-                    color: 'primary.contrastText',
-                    '&:hover': { bgcolor: 'primary.main' },
-                    '& .MuiListItemIcon-root': { color: 'inherit' }
+                    bgcolor: ACCENT_COLOR,
+                    color: 'white',
+                    '&:hover': { bgcolor: ACCENT_COLOR },
                   }
                 }}
               >
-                <ListItemIcon sx={{ minWidth: 40, color: isActive ? 'inherit' : 'text.secondary' }}>
+                <ListItemIcon sx={{ minWidth: 40, color: 'inherit' }}>
                   {item.icon}
                 </ListItemIcon>
-                <ListItemText primary={item.text} primaryTypographyProps={{ fontWeight: isActive ? 600 : 400 }} />
+                <ListItemText 
+                  primary={item.text} 
+                  primaryTypographyProps={{ fontWeight: isActive ? 600 : 400, fontSize: 15 }} 
+                />
               </ListItemButton>
             </ListItem>
           );
         })}
       </List>
-      <Divider />
+      
       <Box sx={{ p: 2 }}>
         <Box 
           sx={{ 
             p: 2, 
-            borderRadius: 2, 
-            bgcolor: 'background.default', 
-            border: '1px solid',
-            borderColor: 'divider',
+            borderRadius: 3, 
+            bgcolor: 'rgba(255,255,255,0.05)', 
             display: 'flex',
             alignItems: 'center',
-            gap: 2
+            gap: 2,
+            border: '1px solid rgba(255,255,255,0.1)'
           }}
         >
-          <Avatar sx={{ width: 32, height: 32, bgcolor: 'secondary.main' }}>
+          <Avatar sx={{ width: 36, height: 36, bgcolor: ACCENT_COLOR, fontSize: 14, fontWeight: 'bold' }}>
             {user?.name?.[0] || 'U'}
           </Avatar>
-          <Box sx={{ overflow: 'hidden' }}>
-            <Typography variant="subtitle2" noWrap>{user?.name}</Typography>
-            <Typography variant="caption" color="text.secondary" noWrap sx={{ display: 'block' }}>
+          <Box sx={{ overflow: 'hidden', flex: 1 }}>
+            <Typography variant="subtitle2" noWrap fontWeight="600">{user?.name}</Typography>
+            <Typography variant="caption" sx={{ display: 'block', opacity: 0.7 }} noWrap>
               {user?.role === 'HQ_ADMIN' ? 'HQ Admin' : 'JV Partner'}
             </Typography>
           </Box>
-          <IconButton size="small" onClick={handleLogout} sx={{ ml: 'auto' }}>
+          <IconButton size="small" onClick={handleLogout} sx={{ color: 'rgba(255,255,255,0.7)', '&:hover': { color: 'white' } }}>
             <LogoutIcon fontSize="small" />
           </IconButton>
         </Box>
@@ -168,13 +176,13 @@ const MainLayout = () => {
         sx={{
           width: { md: `calc(100% - ${DRAWER_WIDTH}px)` },
           ml: { md: `${DRAWER_WIDTH}px` },
-          bgcolor: 'background.paper',
+          bgcolor: '#ffffff', // White topbar for contrast
           borderBottom: '1px solid',
           borderColor: 'divider',
           color: 'text.primary'
         }}
       >
-        <Toolbar>
+        <Toolbar sx={{ minHeight: 70 }}>
           <IconButton
             color="inherit"
             edge="start"
@@ -183,9 +191,29 @@ const MainLayout = () => {
           >
             <MenuIcon />
           </IconButton>
-          <Typography variant="h6" noWrap component="div" sx={{ flexGrow: 1, fontWeight: 600 }}>
+          
+          {/* Breadcrumb-ish Title */}
+          <Typography variant="h6" noWrap component="div" sx={{ flexGrow: 1, fontWeight: 700, color: '#1e293b' }}>
             {currentTitle}
           </Typography>
+
+          {/* Quick Actions (Visible on HQ only usually) */}
+          {user?.role === 'HQ_ADMIN' && (
+             <Button 
+               variant="contained" 
+               startIcon={<AddIcon />} 
+               sx={{ 
+                 bgcolor: '#0f172a', 
+                 borderRadius: 2, 
+                 textTransform: 'none', 
+                 boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)',
+                 '&:hover': { bgcolor: '#1e293b' }
+                }}
+               onClick={() => navigate('/hq/pool')} // Quick jump to pool to add
+             >
+               Add Candidate
+             </Button>
+          )}
         </Toolbar>
       </AppBar>
       
@@ -200,7 +228,7 @@ const MainLayout = () => {
           ModalProps={{ keepMounted: true }}
           sx={{
             display: { xs: 'block', md: 'none' },
-            '& .MuiDrawer-paper': { boxSizing: 'border-box', width: DRAWER_WIDTH },
+            '& .MuiDrawer-paper': { boxSizing: 'border-box', width: DRAWER_WIDTH, bgcolor: BRAND_COLOR },
           }}
         >
           {drawerContent}
@@ -209,7 +237,7 @@ const MainLayout = () => {
           variant="permanent"
           sx={{
             display: { xs: 'none', md: 'block' },
-            '& .MuiDrawer-paper': { boxSizing: 'border-box', width: DRAWER_WIDTH, borderRight: '1px solid', borderColor: 'divider' },
+            '& .MuiDrawer-paper': { boxSizing: 'border-box', width: DRAWER_WIDTH, borderRight: 'none', bgcolor: BRAND_COLOR },
           }}
           open
         >
@@ -221,13 +249,13 @@ const MainLayout = () => {
         component="main"
         sx={{ 
           flexGrow: 1, 
-          p: 3, 
+          p: 4, // Increased padding for better breathing room
           width: { md: `calc(100% - ${DRAWER_WIDTH}px)` },
           minHeight: '100vh',
-          bgcolor: '#f8fafc' // Subtle gray background for dashboard feel
+          bgcolor: '#f1f5f9' // Light slate background
         }}
       >
-        <Toolbar /> {/* Spacer for fixed AppBar */}
+        <Toolbar sx={{ minHeight: 70 }} /> {/* Spacer matching AppBar height */}
         <Outlet />
       </Box>
     </Box>

@@ -13,7 +13,8 @@ import {
   ListItemAvatar,
   ListItemText,
   Divider,
-  Chip
+  Chip,
+  Skeleton
 } from '@mui/material';
 import { 
   TrendingUp, 
@@ -115,7 +116,42 @@ export default function HQOverview() {
     fetchMetrics();
   }, []);
 
-  if (loading || !metrics) return <Box>Loading...</Box>;
+  if (loading || !metrics) {
+    return (
+      <Box maxWidth="1600px" mx="auto">
+        <Box mb={4}>
+          <Skeleton variant="text" width={200} height={40} />
+          <Skeleton variant="text" width={400} />
+        </Box>
+        <Grid container spacing={3} mb={4}>
+          {[1, 2, 3, 4].map((i) => (
+            <Grid item xs={12} sm={6} md={3} key={i}>
+              <Paper sx={{ p: 3, height: 140 }}>
+                <Skeleton variant="text" width="60%" />
+                <Skeleton variant="rectangular" width="40%" height={40} sx={{ my: 2 }} />
+                <Skeleton variant="text" width="80%" />
+              </Paper>
+            </Grid>
+          ))}
+        </Grid>
+        <Grid container spacing={3}>
+          <Grid item xs={12} md={8}>
+            <Paper sx={{ p: 3, height: 400 }}>
+              <Skeleton variant="rectangular" width="100%" height="100%" />
+            </Paper>
+          </Grid>
+          <Grid item xs={12} md={4}>
+            <Paper sx={{ p: 3, height: 400 }}>
+              <Skeleton variant="text" width="50%" sx={{ mb: 2 }} />
+              <Stack spacing={2}>
+                 {[1, 2, 3, 4].map(i => <Skeleton key={i} variant="rectangular" height={60} />)}
+              </Stack>
+            </Paper>
+          </Grid>
+        </Grid>
+      </Box>
+    );
+  }
 
   // Calculate some derived stats
   const totalHeadcount = metrics.headcountByJv.reduce((acc, curr) => acc + curr.count, 0);

@@ -1,9 +1,9 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
+import { ToastProvider } from './context/ToastContext';
 import { ThemeProvider, createTheme } from '@mui/material/styles';
 import { CssBaseline } from '@mui/material';
-
 import LoginPage from './pages/LoginPage';
 import MainLayout from './components/MainLayout';
 
@@ -72,9 +72,10 @@ const ProtectedRoute = ({ children, allowedRoles }) => {
 function App() {
   return (
     <ThemeProvider theme={theme}>
-      <AuthProvider>
-        <CssBaseline />
-        <Router>
+      <ToastProvider>
+        <AuthProvider>
+          <CssBaseline />
+          <Router>
           <Routes>
             <Route path="/login" element={<LoginPage />} />
             
@@ -124,7 +125,8 @@ function App() {
             <Route path="/" element={<Navigate to="/login" />} />
           </Routes>
         </Router>
-      </AuthProvider>
+        </AuthProvider>
+      </ToastProvider>
     </ThemeProvider>
   );
 }
