@@ -12,6 +12,7 @@ const {
   PerformanceReview,
   Notification,
   AuditLog,
+  Comment,
 } = require('./models');
 
 const app = express();
@@ -470,6 +471,50 @@ app.get('/api/candidates/:id/reviews', authenticateToken, async (req, res) => {
       order: [['reviewDate', 'DESC']],
     });
     res.json(reviews);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Comments
+app.get('/api/candidates/:id/comments', authenticateToken, async (req, res) => {
+  try {
+    const candidate = await Candidate.findByPk(req.params.id);
+    if (!candidate) return res.status(404).json({ message: 'Candidate not found' });
+    if (!candidateVisibleToUser(candidate, req.user)) return res.sendStatus(403);
+    
+    const comments = await Comment.findAll({
+      where: { candidateId: candidate.id },
+      include: [{ model: User, as: 'author', attributes: ['id', 'email', 'name', 'role'] }],
+      order: [['createdAt', 'ASC']]
+    });
+    res.json(comments);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post('/api/candidates/:id/comments', authenticateToken, async (req, res) => {
+  try {
+    const { content } = req.body;
+    if (!content) return res.status(400).json({ message: 'Content is required' });
+    
+    const candidate = await Candidate.findByPk(req.params.id);
+    if (!candidate) return res.status(404).json({ message: 'Candidate not found' });
+    if (!candidateVisibleToUser(candidate, req.user)) return res.sendStatus(403);
+    
+    const comment = await Comment.create({
+      candidateId: candidate.id,
+      authorId: req.user.id,
+      content
+    });
+    
+    // Return with author info for immediate display
+    const fullComment = await Comment.findByPk(comment.id, {
+      include: [{ model: User, as: 'author', attributes: ['id', 'email', 'name', 'role'] }]
+    });
+    
+    res.json(fullComment);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

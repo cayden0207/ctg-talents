@@ -5,6 +5,7 @@ const Candidate = require('./Candidate');
 const PerformanceReview = require('./PerformanceReview');
 const Notification = require('./Notification');
 const AuditLog = require('./AuditLog');
+const Comment = require('./Comment');
 
 // Associations
 JV.hasMany(User, { foreignKey: 'jvId' });
@@ -21,6 +22,11 @@ PerformanceReview.belongsTo(Candidate, { foreignKey: 'candidateId' });
 PerformanceReview.belongsTo(User, { foreignKey: 'reviewerId', as: 'reviewer' });
 User.hasMany(PerformanceReview, { foreignKey: 'reviewerId', as: 'submittedReviews' });
 
+Candidate.hasMany(Comment, { foreignKey: 'candidateId', as: 'comments' });
+Comment.belongsTo(Candidate, { foreignKey: 'candidateId' });
+Comment.belongsTo(User, { foreignKey: 'authorId', as: 'author' });
+User.hasMany(Comment, { foreignKey: 'authorId' });
+
 User.hasMany(Notification, { foreignKey: 'userId', as: 'notifications' });
 Notification.belongsTo(User, { foreignKey: 'userId', as: 'user' });
 
@@ -34,5 +40,6 @@ module.exports = {
   Candidate,
   PerformanceReview,
   Notification,
-  AuditLog
+  AuditLog,
+  Comment
 };

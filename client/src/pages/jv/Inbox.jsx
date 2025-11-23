@@ -27,6 +27,7 @@ import {
 } from '@mui/icons-material';
 import api from '../../services/api';
 import { statusLabel } from '../../constants/status';
+import CommentSection from '../../components/CommentSection';
 
 const DetailRow = ({ label, value }) => (
   <Box sx={{ mb: 2 }}>
@@ -186,6 +187,11 @@ export default function JVInbox() {
                     <DetailRow label="Phone" value={selectedCandidate.phone} />
                   </Box>
                   <DetailRow label="Interview Feedback" value={selectedCandidate.interviewNotes} />
+                </Box>
+                
+                <Divider />
+                <Box sx={{ height: 350, mt: 2 }}>
+                  <CommentSection candidateId={selectedCandidate.id} />
                 </Box>
               </Stack>
             </Box>

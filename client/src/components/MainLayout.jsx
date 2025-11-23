@@ -28,7 +28,8 @@ import {
   Group as TeamIcon,
   Logout as LogoutIcon,
   Person as PersonIcon,
-  ChevronLeft as ChevronLeftIcon
+  ChevronLeft as ChevronLeftIcon,
+  Settings as SettingsIcon
 } from '@mui/icons-material';
 import { useNavigate, useLocation, Outlet } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
@@ -40,10 +41,12 @@ const MENU_ITEMS = {
     { text: 'Overview', icon: <DashboardIcon />, path: '/hq/overview' },
     { text: 'Pipeline', icon: <KanbanIcon />, path: '/hq/pipeline' },
     { text: 'Talent Pool', icon: <PeopleIcon />, path: '/hq/pool' },
+    { text: 'Settings', icon: <SettingsIcon />, path: '/settings' },
   ],
   JV_PARTNER: [
     { text: 'Inbox', icon: <InboxIcon />, path: '/jv/inbox' },
     { text: 'My Team', icon: <TeamIcon />, path: '/jv/team' },
+    { text: 'Settings', icon: <SettingsIcon />, path: '/settings' },
   ]
 };
 

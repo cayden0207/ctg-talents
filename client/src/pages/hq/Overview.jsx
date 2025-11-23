@@ -5,73 +5,103 @@ import {
   Paper, 
   Typography, 
   Stack, 
-  LinearProgress, 
-  Chip, 
   Avatar,
+  IconButton,
+  Button,
+  List,
+  ListItem,
+  ListItemAvatar,
+  ListItemText,
   Divider,
-  Button
+  Chip
 } from '@mui/material';
 import { 
-  People as PeopleIcon, 
-  TrendingUp as TrendingIcon, 
-  AssignmentInd as AssignmentIcon,
-  Warning as WarningIcon
+  TrendingUp, 
+  TrendingDown, 
+  MoreVert, 
+  AccessTime, 
+  PersonAdd,
+  CheckCircle,
+  Warning
 } from '@mui/icons-material';
+import { 
+  AreaChart, 
+  Area, 
+  XAxis, 
+  YAxis, 
+  CartesianGrid, 
+  Tooltip, 
+  ResponsiveContainer,
+  PieChart,
+  Pie,
+  Cell
+} from 'recharts';
 import api from '../../services/api';
-import { statusLabel } from '../../constants/status';
-import { useNavigate } from 'react-router-dom';
 
-const StatCard = ({ title, value, icon, color, subtext }) => (
-  <Paper sx={{ p: 2, display: 'flex', flexDirection: 'column', height: '100%' }}>
-    <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 2 }}>
-      <Box>
-        <Typography variant="subtitle2" color="text.secondary" gutterBottom fontWeight="bold">
-          {title.toUpperCase()}
-        </Typography>
-        <Typography variant="h4" fontWeight="bold">
-          {value}
-        </Typography>
-      </Box>
-      <Avatar sx={{ bgcolor: `${color}.light`, color: `${color}.main`, width: 48, height: 48 }}>
-        {icon}
-      </Avatar>
+// Mock Data for Charts (Usually this comes from an aggregation endpoint)
+const MOCK_TREND_DATA = [
+  { name: 'Jan', new: 4, hired: 2 },
+  { name: 'Feb', new: 7, hired: 3 },
+  { name: 'Mar', new: 5, hired: 5 },
+  { name: 'Apr', new: 12, hired: 8 },
+  { name: 'May', new: 10, hired: 6 },
+  { name: 'Jun', new: 18, hired: 12 },
+];
+
+const COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444'];
+
+const StatCard = ({ title, value, trend, trendValue, icon, color }) => (
+  <Paper sx={{ p: 3, height: '100%', position: 'relative', overflow: 'hidden' }}>
+    <Box sx={{ position: 'absolute', right: -10, top: -10, opacity: 0.1, transform: 'rotate(15deg)' }}>
+      {React.cloneElement(icon, { sx: { fontSize: 100, color: color } })}
     </Box>
-    {subtext && (
-      <Typography variant="caption" color="text.secondary">
-        {subtext}
+    <Stack spacing={1}>
+      <Typography variant="subtitle2" color="text.secondary" fontWeight="600" sx={{ textTransform: 'uppercase', letterSpacing: 0.5 }}>
+        {title}
       </Typography>
-    )}
+      <Typography variant="h3" fontWeight="700" sx={{ color: 'text.primary' }}>
+        {value}
+      </Typography>
+      <Stack direction="row" alignItems="center" spacing={0.5}>
+        {trend === 'up' ? <TrendingUp color="success" fontSize="small" /> : <TrendingDown color="error" fontSize="small" />}
+        <Typography variant="body2" color={trend === 'up' ? 'success.main' : 'error.main'} fontWeight="600">
+          {trendValue}
+        </Typography>
+        <Typography variant="caption" color="text.secondary">vs last month</Typography>
+      </Stack>
+    </Stack>
   </Paper>
 );
 
-const FunnelBar = ({ label, count, total, color }) => {
-  const percent = total > 0 ? (count / total) * 100 : 0;
-  return (
-    <Box sx={{ mb: 2 }}>
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.5 }}>
-        <Typography variant="body2" fontWeight="500">{label}</Typography>
-        <Typography variant="body2" color="text.secondary">{count}</Typography>
-      </Box>
-      <LinearProgress 
-        variant="determinate" 
-        value={percent} 
-        sx={{ 
-          height: 8, 
-          borderRadius: 4,
-          bgcolor: 'grey.100',
-          '& .MuiLinearProgress-bar': { bgcolor: color }
-        }} 
-      />
-    </Box>
-  );
-};
+const ActivityItem = ({ user, action, target, time, icon, color }) => (
+  <ListItem alignItems="flex-start" sx={{ px: 0 }}>
+    <ListItemAvatar>
+      <Avatar sx={{ bgcolor: `${color}.light`, color: `${color}.main`, width: 32, height: 32 }}>
+        {icon}
+      </Avatar>
+    </ListItemAvatar>
+    <ListItemText
+      primary={
+        <Typography variant="body2" fontWeight="600">
+          {user} <Typography component="span" variant="body2" color="text.secondary">{action}</Typography> {target}
+        </Typography>
+      }
+      secondary={
+        <Stack direction="row" alignItems="center" spacing={0.5} mt={0.5}>
+          <AccessTime sx={{ fontSize: 12, color: 'text.secondary' }} />
+          <Typography variant="caption" color="text.secondary">{time}</Typography>
+        </Stack>
+      }
+    />
+  </ListItem>
+);
 
 export default function HQOverview() {
   const [metrics, setMetrics] = useState(null);
   const [loading, setLoading] = useState(true);
-  const navigate = useNavigate();
 
   useEffect(() => {
+    // In a real app, we would fetch specific chart data here
     const fetchMetrics = async () => {
       try {
         const { data } = await api.get('/dashboard/metrics');
@@ -85,108 +115,168 @@ export default function HQOverview() {
     fetchMetrics();
   }, []);
 
-  if (loading || !metrics) {
-    return <Box>Loading stats...</Box>;
-  }
+  if (loading || !metrics) return <Box>Loading...</Box>;
 
-  // Derived stats
+  // Calculate some derived stats
   const totalHeadcount = metrics.headcountByJv.reduce((acc, curr) => acc + curr.count, 0);
   const pendingCount = metrics.recruitmentFunnel.find(f => f.status === 'PENDING_ACCEPTANCE')?.count || 0;
-  const readyCount = metrics.recruitmentFunnel.find(f => f.status === 'READY')?.count || 0;
-
-  const maxFunnel = Math.max(...metrics.recruitmentFunnel.map(f => f.count), 1);
+  
+  // Prepare Pie Chart Data
+  const pieData = metrics.headcountByJv.map(item => ({
+    name: item.currentJv?.name || 'Unknown',
+    value: item.count
+  }));
 
   return (
     <Box maxWidth="1600px" mx="auto">
-      <Stack direction="row" justifyContent="space-between" alignItems="center" mb={3}>
-        <Typography variant="h5" fontWeight="bold">Command Center</Typography>
-        <Button variant="contained" onClick={() => navigate('/hq/pool')}>Add Candidate</Button>
-      </Stack>
-      
+      <Box mb={4}>
+        <Typography variant="h4" fontWeight="800" gutterBottom>Dashboard</Typography>
+        <Typography color="text.secondary">Welcome back, HQ Administrator. Here's what's happening today.</Typography>
+      </Box>
+
+      {/* Top Stats Row */}
       <Grid container spacing={3} mb={4}>
         <Grid item xs={12} sm={6} md={3}>
           <StatCard 
             title="Total Headcount" 
             value={totalHeadcount} 
-            icon={<PeopleIcon />} 
-            color="primary" 
-            subtext="Active across all JVs"
+            trend="up" 
+            trendValue="12%" 
+            icon={<PersonAdd />} 
+            color="#3b82f6" 
           />
         </Grid>
         <Grid item xs={12} sm={6} md={3}>
           <StatCard 
-            title="Ready to Allocate" 
-            value={readyCount} 
-            icon={<AssignmentIcon />} 
-            color="info" 
-            subtext="Candidates waiting in pool"
+            title="Active Pipeline" 
+            value={metrics.recruitmentFunnel.reduce((acc, curr) => 
+              ['NEW', 'INTERVIEWING', 'READY'].includes(curr.status) ? acc + curr.count : acc, 0)
+            }
+            trend="up" 
+            trendValue="5%" 
+            icon={<TrendingUp />} 
+            color="#10b981" 
           />
         </Grid>
         <Grid item xs={12} sm={6} md={3}>
           <StatCard 
-            title="Pending Acceptance" 
+            title="Pending Actions" 
             value={pendingCount} 
-            icon={<TrendingIcon />} 
-            color="warning" 
-            subtext="Awaiting JV response"
+            trend="down" 
+            trendValue="2" 
+            icon={<AccessTime />} 
+            color="#f59e0b" 
           />
         </Grid>
         <Grid item xs={12} sm={6} md={3}>
           <StatCard 
-            title="Stale Candidates" 
+            title="Attention Needed" 
             value={metrics.staleCandidates.length} 
-            icon={<WarningIcon />} 
-            color="error" 
-            subtext="> 90 days without update"
+            trend="up" 
+            trendValue="+3" 
+            icon={<Warning />} 
+            color="#ef4444" 
           />
         </Grid>
       </Grid>
 
       <Grid container spacing={3}>
+        {/* Main Chart Area */}
         <Grid item xs={12} md={8}>
+          <Paper sx={{ p: 3, height: 400, mb: 3 }}>
+            <Stack direction="row" justifyContent="space-between" alignItems="center" mb={3}>
+              <Typography variant="h6" fontWeight="bold">Recruitment Velocity</Typography>
+              <Button size="small" variant="outlined">Last 6 Months</Button>
+            </Stack>
+            <ResponsiveContainer width="100%" height="100%">
+              <AreaChart data={MOCK_TREND_DATA} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
+                <defs>
+                  <linearGradient id="colorNew" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.1}/>
+                    <stop offset="95%" stopColor="#3b82f6" stopOpacity={0}/>
+                  </linearGradient>
+                  <linearGradient id="colorHired" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#10b981" stopOpacity={0.1}/>
+                    <stop offset="95%" stopColor="#10b981" stopOpacity={0}/>
+                  </linearGradient>
+                </defs>
+                <XAxis dataKey="name" axisLine={false} tickLine={false} />
+                <YAxis axisLine={false} tickLine={false} />
+                <CartesianGrid vertical={false} strokeDasharray="3 3" stroke="#f1f5f9" />
+                <Tooltip />
+                <Area type="monotone" dataKey="new" stroke="#3b82f6" strokeWidth={3} fillOpacity={1} fill="url(#colorNew)" name="New Applications" />
+                <Area type="monotone" dataKey="hired" stroke="#10b981" strokeWidth={3} fillOpacity={1} fill="url(#colorHired)" name="Hired" />
+              </AreaChart>
+            </ResponsiveContainer>
+          </Paper>
+
+          {/* JV Distribution */}
           <Paper sx={{ p: 3 }}>
-            <Typography variant="h6" gutterBottom>Recruitment Pipeline</Typography>
-            <Typography variant="body2" color="text.secondary" mb={3}>
-              Live snapshot of candidate distribution
-            </Typography>
-            <Grid container spacing={4}>
-              <Grid item xs={12} sm={6}>
-                <Typography variant="subtitle2" gutterBottom color="primary.main">PRE-HIRE</Typography>
-                <FunnelBar label="New Applications" count={metrics.recruitmentFunnel.find(f => f.status === 'NEW')?.count || 0} total={maxFunnel} color="#94a3b8" />
-                <FunnelBar label="Interviewing" count={metrics.recruitmentFunnel.find(f => f.status === 'INTERVIEWING')?.count || 0} total={maxFunnel} color="#64748b" />
-                <FunnelBar label="Ready for Allocation" count={metrics.recruitmentFunnel.find(f => f.status === 'READY')?.count || 0} total={maxFunnel} color="#3b82f6" />
+            <Typography variant="h6" fontWeight="bold" mb={3}>Headcount Distribution</Typography>
+            <Grid container alignItems="center">
+              <Grid item xs={12} md={6}>
+                 <Box height={250}>
+                   <ResponsiveContainer width="100%" height="100%">
+                     <PieChart>
+                       <Pie
+                         data={pieData}
+                         innerRadius={60}
+                         outerRadius={80}
+                         paddingAngle={5}
+                         dataKey="value"
+                       >
+                         {pieData.map((entry, index) => (
+                           <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                         ))}
+                       </Pie>
+                       <Tooltip />
+                     </PieChart>
+                   </ResponsiveContainer>
+                 </Box>
               </Grid>
-              <Grid item xs={12} sm={6}>
-                <Typography variant="subtitle2" gutterBottom color="success.main">POST-HIRE</Typography>
-                <FunnelBar label="Onboarding" count={metrics.recruitmentFunnel.find(f => f.status === 'ONBOARDING')?.count || 0} total={maxFunnel} color="#8b5cf6" />
-                <FunnelBar label="Probation" count={metrics.recruitmentFunnel.find(f => f.status === 'PROBATION')?.count || 0} total={maxFunnel} color="#ec4899" />
-                <FunnelBar label="Active Employees" count={metrics.recruitmentFunnel.find(f => f.status === 'CONFIRMED')?.count || 0} total={maxFunnel} color="#10b981" />
+              <Grid item xs={12} md={6}>
+                <Stack spacing={2}>
+                  {pieData.map((entry, index) => (
+                    <Stack direction="row" alignItems="center" justifyContent="space-between" key={entry.name}>
+                      <Stack direction="row" alignItems="center" spacing={1}>
+                        <Box sx={{ width: 12, height: 12, borderRadius: 6, bgcolor: COLORS[index % COLORS.length] }} />
+                        <Typography variant="body2" fontWeight="500">{entry.name}</Typography>
+                      </Stack>
+                      <Typography fontWeight="bold">{entry.value}</Typography>
+                    </Stack>
+                  ))}
+                </Stack>
               </Grid>
             </Grid>
           </Paper>
         </Grid>
 
+        {/* Right Sidebar: Activity Feed */}
         <Grid item xs={12} md={4}>
           <Paper sx={{ p: 3, height: '100%' }}>
-            <Typography variant="h6" gutterBottom>Headcount by JV</Typography>
-            <Stack spacing={2} mt={2}>
-              {metrics.headcountByJv.map((item, index) => (
-                <Box key={index} sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-                    <Avatar sx={{ width: 32, height: 32, fontSize: 14, bgcolor: 'grey.200', color: 'text.primary' }}>
-                      {item.currentJv?.name?.[0] || 'U'}
-                    </Avatar>
-                    <Typography variant="body2" fontWeight="500">
-                      {item.currentJv?.name || 'Unassigned'}
-                    </Typography>
-                  </Box>
-                  <Chip label={item.count} size="small" />
-                </Box>
-              ))}
-              {metrics.headcountByJv.length === 0 && (
-                <Typography color="text.secondary" align="center">No active placements</Typography>
-              )}
-            </Stack>
+            <Typography variant="h6" fontWeight="bold" mb={2}>Recent Activity</Typography>
+            <List>
+              <ActivityItem 
+                user="HQ Admin" action="interviewed" target="Alice Johnson" 
+                time="10 mins ago" icon={<CheckCircle />} color="success" 
+              />
+              <Divider variant="inset" component="li" />
+              <ActivityItem 
+                user="JV Partner A" action="rejected" target="Bob Smith" 
+                time="2 hours ago" icon={<Warning />} color="error" 
+              />
+              <Divider variant="inset" component="li" />
+               <ActivityItem 
+                user="System" action="flagged" target="Candidate #92" 
+                time="5 hours ago" icon={<AccessTime />} color="warning" 
+              />
+              <Divider variant="inset" component="li" />
+              <ActivityItem 
+                user="HQ Admin" action="added" target="Sarah Williams" 
+                time="1 day ago" icon={<PersonAdd />} color="primary" 
+              />
+            </List>
+            <Button fullWidth variant="text" sx={{ mt: 2 }}>View Full Audit Log</Button>
           </Paper>
         </Grid>
       </Grid>

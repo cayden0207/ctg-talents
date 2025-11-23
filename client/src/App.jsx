@@ -15,6 +15,7 @@ import HQTalentPool from './pages/hq/TalentPool';
 // JV Pages
 import JVInbox from './pages/jv/Inbox';
 import JVTeam from './pages/jv/Team';
+import SettingsPage from './pages/Settings';
 
 // Create a modern theme
 const theme = createTheme({
@@ -106,6 +107,13 @@ function App() {
               <Route path="/jv/team" element={
                 <ProtectedRoute allowedRoles={['JV_PARTNER']}>
                   <JVTeam />
+                </ProtectedRoute>
+              } />
+              
+              {/* Shared Routes */}
+              <Route path="/settings" element={
+                <ProtectedRoute allowedRoles={['HQ_ADMIN', 'JV_PARTNER']}>
+                  <SettingsPage />
                 </ProtectedRoute>
               } />
             </Route>
