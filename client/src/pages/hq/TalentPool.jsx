@@ -16,13 +16,22 @@ import {
   DialogContent,
   DialogActions,
   Grid,
-  Autocomplete
+  Autocomplete,
+  IconButton,
+  Tooltip
 } from '@mui/material';
 import { DataGrid } from '@mui/x-data-grid';
+import { Edit as EditIcon, Visibility as ViewIcon } from '@mui/icons-material';
 import api from '../../services/api';
 import { ALL_STATUSES, statusLabel } from '../../constants/status';
 import { SKILL_OPTIONS } from '../../constants/skills';
 import CandidateDrawer from '../../components/CandidateDrawer';
+
+const SectionHeader = ({ title }) => (
+  <Typography variant="subtitle2" color="primary" sx={{ mt: 2, mb: 1, textTransform: 'uppercase', letterSpacing: 1, fontWeight: 'bold' }}>
+    {title}
+  </Typography>
+);
 
 export default function HQTalentPool() {
   const [candidates, setCandidates] = useState([]);
@@ -30,9 +39,9 @@ export default function HQTalentPool() {
   const [filters, setFilters] = useState({ search: '', status: '' });
   const [drawer, setDrawer] = useState({ open: false, candidate: null });
   
-  // Add Modal State
-  const [openAdd, setOpenAdd] = useState(false);
-  const [newCandidate, setNewCandidate] = useState({
+  // Modal State (Shared for Add/Edit)
+  const [modal, setModal] = useState({ open: false, type: 'add', data: null }); 
+  const [formData, setFormData] = useState({
     name: '',
     email: '',
     phone: '',
@@ -59,42 +68,74 @@ export default function HQTalentPool() {
     }
   };
   
-  const handleAddCandidate = async () => {
+  const handleOpenAdd = () => {
+    setFormData({ name: '', email: '', phone: '', functionRole: '', resumeUrl: '', tags: [], interviewNotes: '', expectedSalary: '' });
+    setModal({ open: true, type: 'add', data: null });
+  };
+
+  const handleOpenEdit = (candidate) => {
+    setFormData({
+      name: candidate.name,
+      email: candidate.email,
+      phone: candidate.phone || '',
+      functionRole: candidate.functionRole || '',
+      resumeUrl: candidate.resumeUrl || '',
+      tags: candidate.tags || [],
+      interviewNotes: candidate.interviewNotes || '',
+      expectedSalary: candidate.expectedSalary || '',
+    });
+    setModal({ open: true, type: 'edit', data: candidate });
+  };
+
+  const handleSubmit = async () => {
     try {
-      await api.post('/candidates', {
-        ...newCandidate,
-        tags: newCandidate.tags, // Already an array
-        expectedSalary: newCandidate.expectedSalary ? Number(newCandidate.expectedSalary) : undefined,
-      });
-      setOpenAdd(false);
-      setNewCandidate({ name: '', email: '', phone: '', functionRole: '', resumeUrl: '', tags: [], interviewNotes: '', expectedSalary: '' });
+      const payload = {
+        ...formData,
+        expectedSalary: formData.expectedSalary ? Number(formData.expectedSalary) : undefined,
+      };
+
+      if (modal.type === 'add') {
+        await api.post('/candidates', payload);
+      } else {
+        await api.put(`/candidates/${modal.data.id}`, payload);
+      }
+
+      setModal({ open: false, type: 'add', data: null });
       fetchCandidates();
     } catch (err) {
-      alert('Error adding candidate');
+      alert('Error saving candidate');
     }
   };
 
   const columns = [
-// ... (keep existing columns)
     { field: 'name', headerName: 'Name', flex: 1, renderCell: p => <b>{p.row.name}</b> },
     { field: 'functionRole', headerName: 'Function', width: 150 },
     { field: 'status', headerName: 'Status', width: 160, renderCell: p => <Chip label={statusLabel(p.row.status)} size="small" /> },
-    { field: 'jv', headerName: 'Current JV', width: 180, valueGetter: (value, row) => row?.currentJv?.name || '-' }, // Fixed: V7 signature
-
-    { field: 'action', headerName: 'Action', width: 100, renderCell: p => (
-      <Button size="small" onClick={() => setDrawer({ open: true, candidate: p.row })}>View</Button>
-    )}
+    { field: 'jv', headerName: 'Current JV', width: 180, valueGetter: (value, row) => row?.currentJv?.name || '-' },
+    { field: 'action', headerName: 'Actions', width: 140, renderCell: p => (
+      <Stack direction="row" spacing={1}>
+         <Tooltip title="View Details">
+            <IconButton size="small" onClick={() => setDrawer({ open: true, candidate: p.row })}>
+              <ViewIcon fontSize="small" />
+            </IconButton>
+         </Tooltip>
+         <Tooltip title="Edit Profile">
+            <IconButton size="small" onClick={() => handleOpenEdit(p.row)}>
+              <EditIcon fontSize="small" />
+            </IconButton>
+         </Tooltip>
+      </Stack>
+    )},
   ];
 
   return (
     <Box sx={{ height: 'calc(100vh - 120px)', display: 'flex', flexDirection: 'column' }}>
       <Box sx={{ mb: 3, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <Typography variant="h5" fontWeight="bold">Global Talent Pool</Typography>
-        <Button variant="contained" onClick={() => setOpenAdd(true)}>Add New Candidate</Button>
+        <Button variant="contained" onClick={handleOpenAdd}>Add New Candidate</Button>
       </Box>
 
       <Paper sx={{ p: 2, mb: 2 }}>
-        {/* ... existing filters ... */}
         <Stack direction="row" spacing={2}>
           <TextField 
             size="small" 
@@ -126,37 +167,41 @@ export default function HQTalentPool() {
         />
       </Paper>
 
-      {/* Add Candidate Dialog */}
-      <Dialog open={openAdd} onClose={() => setOpenAdd(false)} maxWidth="md" fullWidth>
-        <DialogTitle>Add New Candidate</DialogTitle>
-        <DialogContent>
-          <Grid container spacing={2} sx={{ mt: 1 }}>
+      {/* Shared Add/Edit Dialog */}
+      <Dialog open={modal.open} onClose={() => setModal({ ...modal, open: false })} maxWidth="md" fullWidth>
+        <DialogTitle>
+          {modal.type === 'add' ? 'Add New Candidate' : 'Edit Candidate Profile'}
+        </DialogTitle>
+        <DialogContent dividers>
+          <SectionHeader title="Basic Information" />
+          <Grid container spacing={2}>
             <Grid item xs={12} sm={6}>
-              <TextField label="Name" fullWidth value={newCandidate.name} onChange={(e) => setNewCandidate((prev) => ({ ...prev, name: e.target.value }))} />
-            </Grid>
-            <Grid item xs={12} sm={6}>
-              <TextField label="Email" fullWidth value={newCandidate.email} onChange={(e) => setNewCandidate((prev) => ({ ...prev, email: e.target.value }))} />
-            </Grid>
-            <Grid item xs={12} sm={6}>
-              <TextField label="Phone" fullWidth value={newCandidate.phone} onChange={(e) => setNewCandidate((prev) => ({ ...prev, phone: e.target.value }))} />
+              <TextField label="Full Name" required fullWidth value={formData.name} onChange={(e) => setFormData((prev) => ({ ...prev, name: e.target.value }))} />
             </Grid>
             <Grid item xs={12} sm={6}>
-              <TextField label="Function / Role" fullWidth value={newCandidate.functionRole} onChange={(e) => setNewCandidate((prev) => ({ ...prev, functionRole: e.target.value }))} />
+              <TextField label="Email Address" required fullWidth value={formData.email} onChange={(e) => setFormData((prev) => ({ ...prev, email: e.target.value }))} />
             </Grid>
-            <Grid item xs={12}>
-              <TextField label="Resume URL (Google Drive / Dropbox)" fullWidth value={newCandidate.resumeUrl} onChange={(e) => setNewCandidate((prev) => ({ ...prev, resumeUrl: e.target.value }))} />
+            <Grid item xs={12} sm={6}>
+              <TextField label="Phone Number" fullWidth value={formData.phone} onChange={(e) => setFormData((prev) => ({ ...prev, phone: e.target.value }))} />
             </Grid>
-            <Grid item xs={12}>
+            <Grid item xs={12} sm={6}>
+              <TextField label="Current Role / Function" fullWidth value={formData.functionRole} onChange={(e) => setFormData((prev) => ({ ...prev, functionRole: e.target.value }))} />
+            </Grid>
+          </Grid>
+
+          <SectionHeader title="Professional Profile" />
+          <Grid container spacing={2}>
+             <Grid item xs={12}>
               <Autocomplete
                 multiple
                 options={SKILL_OPTIONS.map((option) => option.title)}
                 groupBy={(option) => SKILL_OPTIONS.find(o => o.title === option)?.category}
-                value={newCandidate.tags}
+                value={formData.tags}
                 onChange={(event, newValue) => {
-                  setNewCandidate((prev) => ({ ...prev, tags: newValue }));
+                  setFormData((prev) => ({ ...prev, tags: newValue }));
                 }}
                 renderInput={(params) => (
-                  <TextField {...params} label="Skills & Tags" placeholder="Select skills" />
+                  <TextField {...params} label="Skills & Expertise" placeholder="Select skills (e.g., React, Sales)" />
                 )}
                 renderTags={(value, getTagProps) =>
                   value.map((option, index) => (
@@ -166,16 +211,26 @@ export default function HQTalentPool() {
               />
             </Grid>
             <Grid item xs={12}>
-              <TextField label="Interview Notes & Key Strengths" multiline rows={3} fullWidth value={newCandidate.interviewNotes} onChange={(e) => setNewCandidate((prev) => ({ ...prev, interviewNotes: e.target.value }))} />
-            </Grid>
-            <Grid item xs={12} sm={6}>
-              <TextField label="Expected Salary (Annual)" fullWidth type="number" value={newCandidate.expectedSalary} onChange={(e) => setNewCandidate((prev) => ({ ...prev, expectedSalary: e.target.value }))} />
+              <TextField label="Resume / Portfolio URL" fullWidth value={formData.resumeUrl} onChange={(e) => setFormData((prev) => ({ ...prev, resumeUrl: e.target.value }))} helperText="Link to Google Drive, Dropbox, or LinkedIn" />
             </Grid>
           </Grid>
+
+          <SectionHeader title="HQ Evaluation" />
+          <Grid container spacing={2}>
+            <Grid item xs={12}>
+              <TextField label="Interview Notes & Key Strengths" multiline rows={4} fullWidth value={formData.interviewNotes} onChange={(e) => setFormData((prev) => ({ ...prev, interviewNotes: e.target.value }))} />
+            </Grid>
+            <Grid item xs={12} sm={6}>
+              <TextField label="Expected Salary (Annual)" fullWidth type="number" value={formData.expectedSalary} onChange={(e) => setFormData((prev) => ({ ...prev, expectedSalary: e.target.value }))} InputProps={{ startAdornment: <Typography color="text.secondary" sx={{ mr: 1 }}>$</Typography> }} />
+            </Grid>
+          </Grid>
+
         </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setOpenAdd(false)}>Cancel</Button>
-          <Button variant="contained" onClick={handleAddCandidate} disabled={!newCandidate.name || !newCandidate.email}>Save Profile</Button>
+        <DialogActions sx={{ px: 3, py: 2 }}>
+          <Button onClick={() => setModal({ ...modal, open: false })}>Cancel</Button>
+          <Button variant="contained" onClick={handleSubmit} disabled={!formData.name || !formData.email}>
+            {modal.type === 'add' ? 'Create Profile' : 'Save Changes'}
+          </Button>
         </DialogActions>
       </Dialog>
 
