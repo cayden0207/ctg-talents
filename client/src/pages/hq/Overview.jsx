@@ -52,24 +52,57 @@ const MOCK_TREND_DATA = [
 const COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444'];
 
 const StatCard = ({ title, value, trend, trendValue, icon, color }) => (
-  <Paper sx={{ p: 3, height: '100%', position: 'relative', overflow: 'hidden' }}>
-    <Box sx={{ position: 'absolute', right: -10, top: -10, opacity: 0.1, transform: 'rotate(15deg)' }}>
-      {React.cloneElement(icon, { sx: { fontSize: 100, color: color } })}
-    </Box>
-    <Stack spacing={1}>
-      <Typography variant="subtitle2" color="text.secondary" fontWeight="600" sx={{ textTransform: 'uppercase', letterSpacing: 0.5 }}>
-        {title}
-      </Typography>
-      <Typography variant="h3" fontWeight="700" sx={{ color: 'text.primary' }}>
+  <Paper 
+    elevation={0}
+    sx={{ 
+      p: 3, 
+      height: '100%', 
+      border: '1px solid',
+      borderColor: 'divider',
+      borderRadius: 3,
+      transition: 'transform 0.2s, box-shadow 0.2s',
+      '&:hover': {
+        transform: 'translateY(-2px)',
+        boxShadow: '0 4px 20px rgba(0,0,0,0.05)'
+      }
+    }}
+  >
+    <Stack direction="row" justifyContent="space-between" alignItems="flex-start" mb={2}>
+      <Box 
+        sx={{ 
+          p: 1.5, 
+          borderRadius: 2, 
+          bgcolor: `${color}15`, // 15% opacity
+          color: color,
+          display: 'flex'
+        }}
+      >
+        {React.cloneElement(icon, { fontSize: 'small' })}
+      </Box>
+      {trend && (
+        <Chip 
+          label={`${trendValue}`} 
+          size="small" 
+          color={trend === 'up' ? 'success' : 'error'} 
+          sx={{ 
+            bgcolor: trend === 'up' ? '#ecfdf5' : '#fef2f2',
+            color: trend === 'up' ? '#10b981' : '#ef4444',
+            fontWeight: 'bold',
+            height: 24,
+            borderRadius: 1
+          }}
+          icon={trend === 'up' ? <TrendingUp style={{fontSize: 14}} /> : <TrendingDown style={{fontSize: 14}} />}
+        />
+      )}
+    </Stack>
+    
+    <Stack spacing={0.5}>
+      <Typography variant="h4" fontWeight="800" sx={{ color: 'text.primary' }}>
         {value}
       </Typography>
-      <Stack direction="row" alignItems="center" spacing={0.5}>
-        {trend === 'up' ? <TrendingUp color="success" fontSize="small" /> : <TrendingDown color="error" fontSize="small" />}
-        <Typography variant="body2" color={trend === 'up' ? 'success.main' : 'error.main'} fontWeight="600">
-          {trendValue}
-        </Typography>
-        <Typography variant="caption" color="text.secondary">vs last month</Typography>
-      </Stack>
+      <Typography variant="body2" color="text.secondary" fontWeight="600">
+        {title}
+      </Typography>
     </Stack>
   </Paper>
 );
@@ -289,9 +322,11 @@ export default function HQOverview() {
 
         {/* Right Sidebar: Activity Feed */}
         <Grid item xs={12} md={4}>
-          <Paper sx={{ p: 3, height: '100%' }}>
-            <Typography variant="h6" fontWeight="bold" mb={2}>Recent Activity</Typography>
-            <List>
+          <Paper sx={{ p: 0, height: 'fit-content', position: 'sticky', top: 100, borderRadius: 3, overflow: 'hidden', border: '1px solid', borderColor: 'divider' }} elevation={0}>
+            <Box sx={{ p: 2, bgcolor: '#f8fafc', borderBottom: '1px solid', borderColor: 'divider' }}>
+               <Typography variant="subtitle1" fontWeight="bold">Recent Activity</Typography>
+            </Box>
+            <List sx={{ px: 2 }}>
               <ActivityItem 
                 user="HQ Admin" action="interviewed" target="Alice Johnson" 
                 time="10 mins ago" icon={<CheckCircle />} color="success" 
@@ -312,7 +347,9 @@ export default function HQOverview() {
                 time="1 day ago" icon={<PersonAdd />} color="primary" 
               />
             </List>
-            <Button fullWidth variant="text" sx={{ mt: 2 }}>View Full Audit Log</Button>
+            <Box sx={{ p: 2, borderTop: '1px solid', borderColor: 'divider' }}>
+               <Button fullWidth variant="outlined" size="small" sx={{ borderRadius: 2 }}>View Full Log</Button>
+            </Box>
           </Paper>
         </Grid>
       </Grid>
