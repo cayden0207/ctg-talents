@@ -43,7 +43,8 @@ export default function HQTalentPool() {
     { field: 'name', headerName: 'Name', flex: 1, renderCell: p => <b>{p.row.name}</b> },
     { field: 'functionRole', headerName: 'Function', width: 150 },
     { field: 'status', headerName: 'Status', width: 160, renderCell: p => <Chip label={statusLabel(p.row.status)} size="small" /> },
-    { field: 'jv', headerName: 'Current JV', width: 180, valueGetter: (value, row) => row?.currentJv?.name || '-' },
+    { field: 'jv', headerName: 'Current JV', width: 180, valueGetter: (value, row) => row?.currentJv?.name || '-' }, // Fixed: V7 signature
+
     { field: 'action', headerName: 'Action', width: 100, renderCell: p => (
       <Button size="small" onClick={() => setDrawer({ open: true, candidate: p.row })}>View</Button>
     )}
