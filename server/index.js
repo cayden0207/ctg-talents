@@ -175,6 +175,42 @@ app.get('/api/me', authenticateToken, async (req, res) => {
   }
 });
 
+app.put('/api/me/profile', authenticateToken, async (req, res) => {
+  try {
+    const user = await User.findByPk(req.user.id);
+    if (!user) return res.sendStatus(404);
+    
+    const { name, email } = req.body;
+    if (name) user.name = name;
+    if (email) user.email = email;
+    
+    await user.save();
+    res.json({ id: user.id, name: user.name, email: user.email, role: user.role, jvId: user.jvId });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.put('/api/me/password', authenticateToken, async (req, res) => {
+  try {
+    const { currentPassword, newPassword } = req.body;
+    if (!newPassword || newPassword.length < 6) {
+      return res.status(400).json({ message: 'Password must be at least 6 characters' });
+    }
+
+    const user = await User.findByPk(req.user.id);
+    const valid = await bcrypt.compare(currentPassword, user.password);
+    if (!valid) return res.status(400).json({ message: 'Current password is incorrect' });
+
+    user.password = await bcrypt.hash(newPassword, 10);
+    await user.save();
+    
+    res.json({ message: 'Password updated successfully' });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // Candidate Pool
 app.get('/api/candidates', authenticateToken, async (req, res) => {
   try {

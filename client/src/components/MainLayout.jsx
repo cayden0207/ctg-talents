@@ -34,6 +34,7 @@ import {
 } from '@mui/icons-material';
 import { useNavigate, useLocation, Outlet, Link as RouterLink } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import NotificationMenu from './NotificationMenu';
 
 const DRAWER_WIDTH = 260;
 const BRAND_COLOR = '#0f172a'; // Dark Slate
@@ -223,8 +224,7 @@ const MainLayout = () => {
             </Breadcrumbs>
           </Box>
 
-          {/* Quick Actions (Visible on HQ only usually) */}
-          {/* Removed per user request */}
+          <NotificationMenu />
         </Toolbar>
       </AppBar>
       
