@@ -224,22 +224,7 @@ const MainLayout = () => {
           </Box>
 
           {/* Quick Actions (Visible on HQ only usually) */}
-          {user?.role === 'HQ_ADMIN' && (
-             <Button 
-               variant="contained" 
-               startIcon={<AddIcon />} 
-               sx={{ 
-                 bgcolor: '#0f172a', 
-                 borderRadius: 2, 
-                 textTransform: 'none', 
-                 boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)',
-                 '&:hover': { bgcolor: '#1e293b' }
-                }}
-               onClick={() => navigate('/hq/pool')} // Quick jump to pool to add
-             >
-               Add Candidate
-             </Button>
-          )}
+          {/* Removed per user request */}
         </Toolbar>
       </AppBar>
       
