@@ -81,6 +81,10 @@ const Candidate = sequelize.define('Candidate', {
     type: DataTypes.INTEGER,
     allowNull: true
   },
+  interviewDate: {
+    type: DataTypes.DATE,
+    allowNull: true
+  },
   lastStatusUpdate: {
     type: DataTypes.DATE,
     allowNull: true

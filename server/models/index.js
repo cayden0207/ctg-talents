@@ -6,10 +6,17 @@ const PerformanceReview = require('./PerformanceReview');
 const Notification = require('./Notification');
 const AuditLog = require('./AuditLog');
 const Comment = require('./Comment');
+const AllocationRecord = require('./AllocationRecord');
 
 // Associations
 JV.hasMany(User, { foreignKey: 'jvId' });
 User.belongsTo(JV, { foreignKey: 'jvId' });
+
+// Allocation History
+Candidate.hasMany(AllocationRecord, { foreignKey: 'candidateId', as: 'allocationHistory' });
+AllocationRecord.belongsTo(Candidate, { foreignKey: 'candidateId' });
+AllocationRecord.belongsTo(JV, { foreignKey: 'jvId' });
+JV.hasMany(AllocationRecord, { foreignKey: 'jvId' });
 
 JV.hasMany(Candidate, { foreignKey: 'currentJvId', as: 'currentCandidates' });
 Candidate.belongsTo(JV, { foreignKey: 'currentJvId', as: 'currentJv' });
@@ -41,5 +48,6 @@ module.exports = {
   PerformanceReview,
   Notification,
   AuditLog,
-  Comment
+  Comment,
+  AllocationRecord
 };

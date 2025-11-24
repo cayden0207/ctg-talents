@@ -296,8 +296,18 @@ app.post('/api/candidates/:id/allocate', authenticateToken, requireRole('HQ_ADMI
 
     const before = candidate.toJSON();
     candidate.pendingJvId = targetJvId;
-    markStatus(candidate, 'PENDING_ACCEPTANCE', note);
+    candidate.status = 'PENDING_ACCEPTANCE';
+    candidate.statusNote = note || null;
+    candidate.lastStatusUpdate = new Date();
     await candidate.save();
+
+    // Create Allocation Record
+    await AllocationRecord.create({
+      candidateId: candidate.id,
+      jvId: targetJvId,
+      action: 'ALLOCATE',
+      note
+    });
 
     await notifyJv(targetJvId, 'candidate.allocated', {
       candidateId: candidate.id,
@@ -356,8 +366,17 @@ app.post('/api/inbox/:id/accept', authenticateToken, requireJV, async (req, res)
     candidate.currentJvId = req.user.jvId;
     candidate.pendingJvId = null;
     candidate.expectedStartDate = expectedStartDate || candidate.expectedStartDate;
-    markStatus(candidate, 'ONBOARDING', 'Accepted by JV');
+    candidate.status = 'ONBOARDING';
+    candidate.statusNote = 'Accepted by JV';
+    candidate.lastStatusUpdate = new Date();
     await candidate.save();
+
+    // Create Allocation Record
+    await AllocationRecord.create({
+      candidateId: candidate.id,
+      jvId: req.user.jvId,
+      action: 'ACCEPT'
+    });
 
     await notifyHq('candidate.accepted', {
       candidateId: candidate.id,
@@ -381,9 +400,20 @@ app.post('/api/inbox/:id/reject', authenticateToken, requireJV, async (req, res)
     if (!candidate) return res.status(404).json({ message: 'Candidate not found in your inbox' });
 
     const before = candidate.toJSON();
+    const rejectedJvId = candidate.pendingJvId; // Capture before clearing
     candidate.pendingJvId = null;
-    markStatus(candidate, 'READY', reason);
+    candidate.status = 'READY';
+    candidate.statusNote = reason;
+    candidate.lastStatusUpdate = new Date();
     await candidate.save();
+
+    // Create Allocation Record
+    await AllocationRecord.create({
+      candidateId: candidate.id,
+      jvId: rejectedJvId,
+      action: 'REJECT',
+      note: reason
+    });
 
     await notifyHq('candidate.rejected', {
       candidateId: candidate.id,
@@ -421,11 +451,25 @@ app.post('/api/team/:id/status', authenticateToken, requireJV, async (req, res) 
     }
     ensureTransition(candidate.status, nextStatus);
     const before = candidate.toJSON();
-    markStatus(candidate, nextStatus, note);
+    
+    // Update status
+    candidate.status = nextStatus;
+    candidate.statusNote = note || null;
+    candidate.lastStatusUpdate = new Date();
+
+    // Handle special statuses
     if (['RESIGNED', 'TERMINATED', 'RETURNED'].includes(nextStatus)) {
+      const oldJvId = candidate.currentJvId; // Capture before clearing
       candidate.currentJvId = nextStatus === 'RETURNED' ? null : candidate.currentJvId;
       if (nextStatus === 'RETURNED') {
         candidate.pendingJvId = null;
+        // Create Return Record
+        await AllocationRecord.create({
+          candidateId: candidate.id,
+          jvId: oldJvId,
+          action: 'RETURN',
+          note
+        });
       }
     }
     await candidate.save();
